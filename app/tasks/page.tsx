@@ -1,69 +1,75 @@
 "use client";
 
-import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-  CardContent,
-} from "../components/ui/card";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/app/config/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import TaskForm from "../components/TaskForm";
+import TaskList from "../components/TaskList";
+import { FaTasks } from "react-icons/fa";
+
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+}
 
 export default function Tasks() {
+  const [user] = useAuthState(auth);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.push(`/login`);
+    } else {
+      const q = query(
+        collection(db, `users/${user.uid}/tasks`),
+        orderBy(`createdAt`, `desc`)
+      );
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const taskList: Task[] = querySnapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Task)
+        );
+        setTasks(taskList);
+      });
+      return unsubscribe;
+    }
+  }, [user, router]);
+
+  if (!user) return null;
+
   return (
-    <div className="container mx-auto px-4 py-12 max-w-2xl">
-      <motion.h1
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-3xl font-bold text-gray-900 mb-8"
-      >
-        Your Tasks
-      </motion.h1>
-      <motion.ul
-        className="space-y-6"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.1,
-            },
-          },
-        }}
-      >
-        {[1, 2, 3].map((item) => (
-          <motion.li
-            key={item}
-            variants={{
-              hidden: { opacity: 0, y: 20 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>Example Task {item}</CardTitle>
-                <CardDescription>
-                  This is a placeholder task description
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button variant="outline">Mark as Complete</Button>
-              </CardFooter>
-            </Card>
-          </motion.li>
-        ))}
-      </motion.ul>
-      <motion.div
-        className="mt-12 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Button>Add New Task</Button>
-      </motion.div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-indigo-800 flex items-center">
+            <FaTasks className="mr-4" />
+            My Tasks
+          </h1>
+        </header>
+
+        <main className="bg-white rounded-lg shadow-lg p-6">
+          <div className="mb-6">
+            <button
+              onClick={() => setIsFormVisible(!isFormVisible)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              {isFormVisible ? "Hide Form" : "Add New Task"}
+            </button>
+          </div>
+
+          {isFormVisible && (
+            <div className="mb-8">
+              <TaskForm userId={user.uid} />
+            </div>
+          )}
+
+          <TaskList tasks={tasks} userId={user.uid} />
+        </main>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,7 @@ const auth = getAuth(app);
 
 // intialize google authentication
 const googleProvider = new GoogleAuthProvider();
+// db
 const db = getFirestore(app);
 
 export { auth, googleProvider, db };
