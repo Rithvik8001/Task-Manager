@@ -37,23 +37,12 @@ export default function LoginPage() {
         password
       );
       const emailUser = emailResult.user;
-      if (emailUser.email) {
-        const isEmailAccountExist = await fetchSignInMethodsForEmail(
-          auth,
-          emailUser.email
-        );
-        if (isEmailAccountExist.length === 0) {
-          setAlert(true);
-          setTimeout(() => {
-            setAlert(false), 5000;
-          });
-        } else {
-          router.push("/tasks");
-        }
+      if (emailUser) {
+        // User is signed in, redirect to /tasks
+        router.push("/tasks");
       }
-    } catch (error) {
-      setError("Failed to log in. Please check your email and password.");
-      console.error(error);
+    } catch (error: any) {
+      setError("Failed to log in. " + error.message);
     }
   };
 
@@ -62,24 +51,14 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      if (user.email) {
-        const isAccountExist = await fetchSignInMethodsForEmail(
-          auth,
-          user.email
-        );
-
-        if (isAccountExist.length === 0) {
-          setAlert(true);
-          setTimeout(() => {
-            setAlert(false), 5000;
-          });
-        } else {
-          router.push(`/tasks`);
-        }
+      if (user) {
+        // User is signed in, redirect to /tasks
+        router.push("/tasks");
+      } else {
+        setError("Failed to retrieve the Google account");
       }
-    } catch (error) {
-      setError("Failed to log in with Google.");
-      console.error(error);
+    } catch (error: any) {
+      setError("Failed to log in with Google. " + error.message);
     }
   };
 
